@@ -1,8 +1,6 @@
 
 
 
-
-# Import the necessary packages and modules
 import matplotlib.pyplot as plt
 import math
 import random
@@ -18,7 +16,6 @@ class EMA:
 		return self.s
 
 class SMA:
-
 	def __init__(self,vals):
 		self.n = len(vals)
 		self.vals = vals[:]
@@ -26,14 +23,11 @@ class SMA:
 		self.s = sum(vals)/len(vals)
 
 	def next(self,v):
-		vals = self.vals
-		n = self.n
-		ind = self.ind
+		vals,n,ind = self.vals,self.n,self.ind
 		self.s = self.s - vals[ind]/n + v/n
 		vals[ind] = v
 		self.ind = (ind+1)%n
 		return self.s
-
 
 
 def calcSMA(vals,n):
@@ -80,5 +74,30 @@ def test():
 
 	# Show the plot
 	plt.show()
+
+
+
+def test2():
+	x = [ 100*math.sin( (2*t/100-1)*math.pi )  + 10*math.sin( (8*t/100-4)*math.pi )  +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
+	y = [ random.randint(-15,15)+t for t in x ]
+	w = calcSMA(y,5)
+	w = [ t+20 for t in w]
+
+	sma = SMA(y[:5])
+
+	z = []
+	for t in y[5:] :
+		z.append(sma.next(t))
+
+	plt.plot(y)
+	plt.plot(z)
+	plt.plot(w)
+
+	# Add a legend
+	plt.legend()
+
+	# Show the plot
+	plt.show()
+
 
 test()
