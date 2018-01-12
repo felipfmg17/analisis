@@ -58,19 +58,106 @@ def calcEMA(vals,a):
 		s = series[-1]*(1-a) + vals[i]*a
 		series.append(s)
 	return series
-	
 
-def simu(prices, usd, alpha, minutes, limbuy, limsell, fee):
+def sim(pri, fiat, a, mins, lbuy, lsell, fee):
+    ema = EMA(a)
+    dev = Ratio( [pri[0]]*mins )
+    ofiat, cryp, sells, buys, fees = fiat, 0, 0, 0, 0
+    for p in pri:
+        e = ema.next(p)
+        d = dev.next(e)
+        if d>lbuy and fiat>0 :
+            fees += fiat*fee
+            fiat -= fiat*fee
+            cryp += fiat/p
+            fiat = 0
+            buys += 1
+        elif d<lsell and cryp>0 :
+            fiat = cryp*p
+            cryp = 0
+            fees += fiat*fee
+            fiat -= fiat*fee
+            sells += 1
+    if cryp>0:
+        fiat = cryp*pri[-1]
+        cryp = 0
+        fees += fiat*fee
+        fiat -= fiat*fee
+        sells += 1
+    gain = (fiat-ofiat)/ofiat
+    return gain
+
+
+
+
+def born():
+    gen = [0,0,0,0]
+    gen[0] = random.random()
+    gen[1] = random.randint(1,60*24*7)
+    gen[2] = random.random()
+    gen[3] = -random.random()
+    return gen
+
+def mutate(gen):
+    gen = gen[:]
+    ale = random.randint(0,3)
+    gen[ale] += gen[ale]/2 - random.randint(0,1)
+    if ale==1 and gen[1]==0:
+        gen[1] = 1
+    return gen
+
+def reproduce(g1,g2):
+    g = [0,0,0,0]
+    for i in range( len(g) ):
+        c = random.randint(0,2)
+        if c==0:
+            g[i] = g1[i]
+        elif c==1:
+            g[i] = g2[i]
+        else:
+            g[i] = (g1[i]+g2[i])/2
+    return g
+
+
+def fitness(gen):
+    return sim(pri,fiat, gen[0], gen[1], gen[2], gen[3], fee)
+
+
+def evolution(pri, fiat, fee):
+    n = 1000
+    pop = [ born() for i in range(n) ]
+
+    for i in range(100):
+        for j in range(n/10):
+            ind = random.randrange(n)
+            pop.append( mutate(pop[ind]) )
+            pop.append( born() )
+            a = random.randrante(n)
+            b = random.randrange(n)
+            pop.append( reproduce(pop[a],pop[b]) )
+        sorted(pop, key=fitness)
+        pop = pop[:n]
+
+
+
+
+
+
+
+
+def simugraph(prices, usd, alpha, minutes, limbuy, limsell, fee):
     ema = EMA(alpha)
-    por = Ratio( [0]*minutes )
-
+    ema_sig = []
+    por = Ratio( [prices[0]]*minutes )
     fiat = usd
     crypto = 0
-    trans = 0
+    sells = 0
+    buys = 0
     fees = 0
 
     for p in prices:
         e = ema.next(p)
+        ema_sig.append(e)
         d = por.next(e)
         if d>limbuy :
             if fiat>0 :
@@ -78,21 +165,50 @@ def simu(prices, usd, alpha, minutes, limbuy, limsell, fee):
                 fees += fiat*fee
                 crypto += fiat/p
                 fiat = 0
-                trans += 1
+                buys += 1
         elif d<limsell :
             if crypto>0 :
                 fiat = crypto*p
                 crypto = 0
                 fees += fiat*fee
                 fiat *= 1-fee
-                trans += 1
+                sells += 1
+
+    if crypto>0:
+        fiat = crypto * prices[-1]
+        crypto = 0
+        fees += fiat * fee
+        fiat *= 1 - fee
+        sells += 1
+
+    gain = (fiat-usd)/usd
+
+    rep = ''
+    rep += 'original money: ' + str(usd) + '\n'
+    rep += 'final money: ' + str(fiat) + '\n'
+    rep += 'diference: '+ str(fiat-usd )+ '\n'
+    rep += 'percentage gain: ' +  str((fiat-usd)/usd*100) + ' % \n'
+    rep += 'buys: ' + str(buys) + '\n'
+    rep += 'sells: ' + str(sells) + '\n'
+    rep += 'fees: ' +str(fees) + '\n'
+    rep += 'fees percentage ' + str( fees/fiat ) + '\n'
+
+    print(rep)
+
+    plt.plot(prices)
+    plt.plot(ema_sig)
+    plt.show()
+
+    return gain
 
 
-
-
+def test3():
+    x = [100 * math.sin((4 * t / 100 - 2) * math.pi) + 10 * math.sin((16 * t / 100 - 8) * math.pi) for t in range(100)]
+    y = [random.randint(-15, 15) + t + 200 for t in x]
+    sim(y,100,1,1,0.03,-0.03,0.0001)
 
 def test():
-	x = [ 100*math.sin( (2*t/100-1)*math.pi )  + 10*math.sin( (8*t/100-4)*math.pi )  +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
+	x = [ 100*math.sin( (4*t/100-2)*math.pi )   +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
 	y = [ random.randint(-15,15)+t+200 for t in x ]
 
 	ema = EMA(0.3)
@@ -147,4 +263,5 @@ def test2():
 	# Show the plot
 	plt.show()
 
-test()
+test3()
+
