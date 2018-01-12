@@ -39,7 +39,6 @@ class Ratio:
 		self.ind = (ind+1)%n
 		return s
 
-
 def calcSMA(vals,n):
 	series = []
 	s = 0
@@ -61,11 +60,40 @@ def calcEMA(vals,a):
 	return series
 	
 
+def simu(prices, usd, alpha, minutes, limbuy, limsell, fee):
+    ema = EMA(alpha)
+    por = Ratio( [0]*minutes )
+
+    fiat = usd
+    crypto = 0
+    trans = 0
+    fees = 0
+
+    for p in prices:
+        e = ema.next(p)
+        d = por.next(e)
+        if d>limbuy :
+            if fiat>0 :
+                fiat *= 1-fee
+                fees += fiat*fee
+                crypto += fiat/p
+                fiat = 0
+                trans += 1
+        elif d<limsell :
+            if crypto>0 :
+                fiat = crypto*p
+                crypto = 0
+                fees += fiat*fee
+                fiat *= 1-fee
+                trans += 1
+
+
+
 
 
 def test():
 	x = [ 100*math.sin( (2*t/100-1)*math.pi )  + 10*math.sin( (8*t/100-4)*math.pi )  +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
-	y = [ random.randint(-15,15)+t for t in x ]
+	y = [ random.randint(-15,15)+t+200 for t in x ]
 
 	ema = EMA(0.3)
 
@@ -74,10 +102,10 @@ def test():
 		z.append(ema.next(t))
 
 
-	rat = Ratio(z[:1])
+	rat = Ratio(z[:10])
 	ema_rat = []
 
-	for t in z[1:]:
+	for t in z[10:]:
 		ema_rat.append(rat.next(t)*100)
 
 
@@ -91,8 +119,6 @@ def test():
 
 	# Show the plot
 	plt.show()
-
-
 
 def test2():
 	y = [ 100*math.sin( (2*t/100-1)*math.pi )  + 10*math.sin( (8*t/100-4)*math.pi )  +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
@@ -120,6 +146,5 @@ def test2():
 
 	# Show the plot
 	plt.show()
-
 
 test()
