@@ -1,6 +1,3 @@
-
-
-
 import matplotlib.pyplot as plt
 import math
 import random
@@ -29,6 +26,19 @@ class SMA:
 		self.ind = (ind+1)%n
 		return self.s
 
+class Ratio:
+	def __init__(self,vals):
+		self.n = len(vals)
+		self.vals = vals[:]
+		self.ind = 0
+
+	def next(self,v):
+		vals,n,ind = self.vals,self.n,self.ind
+		s = (v-vals[ind])/vals[ind]
+		vals[ind] = v
+		self.ind = (ind+1)%n
+		return s
+
 
 def calcSMA(vals,n):
 	series = []
@@ -56,8 +66,6 @@ def calcEMA(vals,a):
 def test():
 	x = [ 100*math.sin( (2*t/100-1)*math.pi )  + 10*math.sin( (8*t/100-4)*math.pi )  +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
 	y = [ random.randint(-15,15)+t for t in x ]
-	w = calcEMA(y,0.3)
-	w = [ t+20 for t in w]
 
 	ema = EMA(0.3)
 
@@ -65,12 +73,21 @@ def test():
 	for t in y:
 		z.append(ema.next(t))
 
+
+	rat = Ratio(z[:1])
+	ema_rat = []
+
+	for t in z[1:]:
+		ema_rat.append(rat.next(t)*100)
+
+
+	print(ema_rat)
+
 	plt.plot(y)
 	plt.plot(z)
-	plt.plot(w)
+	plt.plot(ema_rat)
+	
 
-	# Add a legend
-	plt.legend()
 
 	# Show the plot
 	plt.show()
@@ -78,20 +95,25 @@ def test():
 
 
 def test2():
-	x = [ 100*math.sin( (2*t/100-1)*math.pi )  + 10*math.sin( (8*t/100-4)*math.pi )  +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
-	y = [ random.randint(-15,15)+t for t in x ]
-	w = calcSMA(y,5)
-	w = [ t+20 for t in w]
+	y = [ 100*math.sin( (2*t/100-1)*math.pi )  + 10*math.sin( (8*t/100-4)*math.pi )  +  10*math.sin( (16*t/100-8)*math.pi ) for t in range(100) ]
+	x = [ random.randint(-15,15)+t for t in y ]
 
-	sma = SMA(y[:5])
+	sma = SMA(x[:5])
+	sma_sig = []
+	for t in x:
+		sma_sig.append(t)
 
-	z = []
-	for t in y[5:] :
-		z.append(sma.next(t))
 
-	plt.plot(y)
-	plt.plot(z)
-	plt.plot(w)
+	rat = Ratio(sma_sig[:10])
+	sma_rat = []
+	for t in sma_sig[10:]:
+		sma_rat.append(rat.next(t)*100)
+
+
+	plt.plot(x)
+	plt.plot(sma_sig)
+	plt.plot(sma_rat)
+	
 
 	# Add a legend
 	plt.legend()
