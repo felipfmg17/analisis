@@ -154,22 +154,25 @@ def born():
 
 def mutate(gen):
     gen = gen[:]
-    ale = random.randint(0,3)
-    gen[ale] += gen[ale]/2 - random.randint(0,1)*gen[ale]
-    nvo = born()
-    if ale==0:
-        if gen[ale]<0 or gen[ale]>1:
-            gen[ale] = nvo[ale]
-    elif ale==1:
-        gen[ale] = int(gen[ale])
-        if gen[ale]<0:
-            gen[ale] = nvo[ale]
-    elif ale==2:
-        if gen[ale]<0 :
-            gen[ale] = nvo[ale]
-    elif ale==3:
-        if gen[ale]>0 :
-            gen[ale] = nvo[ale]
+    for ale in range(len(gen)):
+        mod = random.randint(0,1)
+        if mod==0 :
+            continue
+        gen[ale] += gen[ale]/2 - random.randint(0,1)*gen[ale]
+        nvo = born()
+        if ale==0:
+            if gen[ale]<0 or gen[ale]>1:
+                gen[ale] = nvo[ale]
+        elif ale==1:
+            gen[ale] = int(gen[ale])
+            if gen[ale]<0:
+                gen[ale] = nvo[ale]
+        elif ale==2:
+            if gen[ale]<0 :
+                gen[ale] = nvo[ale]
+        elif ale==3:
+            if gen[ale]>0 :
+                gen[ale] = nvo[ale]
     return gen
 
 
@@ -197,12 +200,22 @@ def evolution(pri, fiat, fee, n):
             ind = random.randrange(n)
             pop.append( mutate(pop[ind]) )
             pop.append( born() )
+            pop.append( born() )
+            pop.append( born() )
+            pop.append( born() )
+            pop.append( born() )
+            
             a = random.randrange(n)
             b = random.randrange(n)
             pop.append( reproduce(pop[a],pop[b]) )
+        uniq = set()
+        for e in pop:
+            uniq.add( tuple(e) )
+        pop = [ list(e) for e in uniq]
         pop = sorted(pop, key=fitness, reverse=True)
-        pop = pop[:n]
-        print(i)
+        if len(pop)>=n:
+            pop = pop[:n]
+        print(i, fitness(pop[0]) )
     return pop
 
 
@@ -280,7 +293,7 @@ def test2():
 def test4():
     prices = genprice()
     params = [prices, 100, 0.0001]
-    pop_n = 300
+    pop_n = 500
     par = params + [pop_n]
     pop = evolution( *par )
     p = pop[0]
