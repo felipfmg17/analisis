@@ -1,19 +1,19 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ba1925866800680c73ab0a0a4cb512921611d9352f04786508d8ef787e4fb519"
+            "sha256": "56f3b161b0b08df7c9a73443b0378030d3abed2d84c29aacbde405302707c38d"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
-            "implementation_version": "3.4.3",
+            "implementation_version": "3.5.2",
             "os_name": "posix",
             "platform_machine": "x86_64",
             "platform_python_implementation": "CPython",
-            "platform_release": "4.4.0-92-generic",
+            "platform_release": "4.4.0-109-generic",
             "platform_system": "Linux",
-            "platform_version": "#115~14.04.1-Ubuntu SMP Thu Aug 10 15:06:53 UTC 2017",
-            "python_full_version": "3.4.3",
-            "python_version": "3.4",
+            "platform_version": "#132-Ubuntu SMP Tue Jan 9 19:52:39 UTC 2018",
+            "python_full_version": "3.5.2",
+            "python_version": "3.5",
             "sys_platform": "linux"
         },
         "pipfile-spec": 6,
@@ -86,6 +86,13 @@
                 "sha256:3de643935b212307b420248018323a44ec51987a336d1d747c1322afc3c099fb"
             ],
             "version": "==1.14.0"
+        },
+        "pymysql": {
+            "hashes": [
+                "sha256:04fa19fad017fdb21394fad2878c1d6bd346959d4fbfd1b66050a09fc636a321",
+                "sha256:32da4a66397077d42908e449688f2ec71c2b18892a6cd04f03ab2aa828a70f40"
+            ],
+            "version": "==0.8.0"
         },
         "pyparsing": {
             "hashes": [

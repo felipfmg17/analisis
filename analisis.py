@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import math
 import random
+import pymysql
 
 class EMA:
 	def __init__(self,a):
@@ -108,6 +109,7 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
                 crypto += fiat/p
                 fiat = 0
                 buys += 1
+                print('Buying, price',p)
         elif d<limsell :
             if crypto>0 :
                 fiat = crypto*p
@@ -155,66 +157,12 @@ def born():
     gen[3] = -random.random()
     return gen
 
-def mutate(gen):
-    gen = gen[:]
-    ale = random.randrange(4)
-    nvo = born()
-    if ale == 0:
-        #gen[ale] += 0.01 if random.randrange(2)==0 else -0.01
-        gen[ale] +=  gen[ale]/2 - random.randrange(2)*gen[ale]
-        #gen[ale] += random.random() if random.randrange(2)==0 else -random.random()
-        if gen[ale] < 0 or gen[ale] > 1:
-            gen[ale] = nvo[ale]
-    elif ale == 1:
-        gen[ale] += gen[ale] // 2 - random.randrange(2) * gen[ale]
-        if gen[ale] < 1:
-            gen[ale] = nvo[ale]
-    elif ale == 2:
-        #gen[ale] += 0.01 if random.randrange(2) == 0 else -0.01
-        gen[ale] += gen[ale] / 2 - random.randrange(2) * gen[ale]
-        #gen[ale] += random.random() if random.randrange(2) == 0 else -random.random()
-        if gen[ale] < 0:
-            gen[ale] = nvo[ale]
-    elif ale == 3:
-        #gen[ale] += 0.01 if random.randrange(2) == 0 else -0.01
-        gen[ale] += gen[ale] / 2 - random.randrange(2) * gen[ale]
-        #gen[ale] += random.random() if random.randrange(2) == 0 else -random.random()
-        if gen[ale] > 0:
-            gen[ale] = nvo[ale]
-    return gen
-
-def reproduce(g1,g2):
-    g = [0,0,0,0]
-    for i in range( len(g) ):
-        g[i] = g1[i] if random.randrange(2)==0 else g2[i] 
-    return g
-
 params = []
 
 def fitness(gen):
     p = params + gen
     #print('fitness:' ,gen)
     return sim(*p)
-
-def evolution(pri, fiat, fee, n):
-    global params
-    params = [pri,fiat,fee]
-    pop = [ born() for i in range(n) ]
-    for i in range(500):
-        for j in range(n//10):
-            ind = random.randrange(n)
-            pop.append( mutate(pop[ind]) )
-            pop.append(born())
-            a = random.randrange(n)
-            b = random.randrange(n)
-            pop.append( reproduce(pop[a],pop[b]) )
-        pop = sorted(pop, key=fitness, reverse=True)
-        pop = pop[:n]
-        print(i, fitness(pop[0]) )
-    return pop
-
-
-
 
 def valid(v,ale):
     b = born()
@@ -248,12 +196,97 @@ def evolve(pri, fiat, fee, n):
     global params
     params = [pri,fiat,fee]
     pop = [ born() for i in range(n) ]
-    for i in range(500):
+    for i in range(60):
         for j in range(n):
-            cgen = move(pop[j])
-            pop[j] = cgen
+            pop[j] = move(pop[j])
         pop = sorted(pop,key=fitness,reverse=True)
         print(i, pop[0], fitness(pop[0]) )
+    return pop
+
+def train(prices,fee):
+    params = [prices, 100, fee]
+    pop_n = 20
+    par = params + [pop_n]
+    pop = evolve(*par)
+    p = pop[0]
+    print(p)
+    par = params + p
+    simugraph(*par)
+
+
+
+def loadPrices():
+    db = pymysql.connect('localhost','root','root','crypto_prices')
+    sql = """ SELECT  a.price as Price
+FROM coin_price as a
+JOIN currency_pair as b
+ON a.currency_pair_id = b.id
+JOIN exchange as c
+ON a.exchange_id = c.id
+WHERE c.name = \"bitso\"
+AND b.name = \"xrp_mxn\"
+AND a.date_time > \"2018-01-09 12:00:00\"
+AND a.date_time < \"2018-01-11 12:00:00\"; """
+    cursor = db.cursor()
+    cursor.execute(sql)
+
+    lines = cursor.fetchall()
+    prices = [ e[0] for e in lines ]
+    return prices;
+
+
+
+def mutate(gen):
+    gen = gen[:]
+    ale = random.randrange(4)
+    nvo = born()
+    if ale == 0:
+        #gen[ale] += 0.01 if random.randrange(2)==0 else -0.01
+        gen[ale] +=  gen[ale]/2 - random.randrange(2)*gen[ale]
+        #gen[ale] += random.random() if random.randrange(2)==0 else -random.random()
+        if gen[ale] < 0 or gen[ale] > 1:
+            gen[ale] = nvo[ale]
+    elif ale == 1:
+        gen[ale] += gen[ale] // 2 - random.randrange(2) * gen[ale]
+        if gen[ale] < 1:
+            gen[ale] = nvo[ale]
+    elif ale == 2:
+        #gen[ale] += 0.01 if random.randrange(2) == 0 else -0.01
+        gen[ale] += gen[ale] / 2 - random.randrange(2) * gen[ale]
+        #gen[ale] += random.random() if random.randrange(2) == 0 else -random.random()
+        if gen[ale] < 0:
+            gen[ale] = nvo[ale]
+    elif ale == 3:
+        #gen[ale] += 0.01 if random.randrange(2) == 0 else -0.01
+        gen[ale] += gen[ale] / 2 - random.randrange(2) * gen[ale]
+        #gen[ale] += random.random() if random.randrange(2) == 0 else -random.random()
+        if gen[ale] > 0:
+            gen[ale] = nvo[ale]
+    return gen
+
+def reproduce(g1,g2):
+    g = [0,0,0,0]
+    for i in range( len(g) ):
+        g[i] = g1[i] if random.randrange(2)==0 else g2[i]
+    return g
+
+def evolution(pri, fiat, fee, n):
+    global params
+    params = [pri,fiat,fee]
+    pop = [ born() for i in range(n) ]
+    for i in range(500):
+        for j in range(n//10):
+            ind = random.randrange(n)
+            pop.append( mutate(pop[ind]) )
+            pop.append(born())
+            a = random.randrange(n)
+            b = random.randrange(n)
+            pop.append( reproduce(pop[a],pop[b]) )
+        pop = sorted(pop, key=fitness, reverse=True)
+        pop = pop[:n]
+        print(i, fitness(pop[0]) )
+    return pop
+
 
 
 def genprice():
@@ -338,7 +371,7 @@ def test4():
 def test5():
     prices = genprice()
     params = [prices, 100, 0.0001]
-    pop_n = 100
+    pop_n = 20
     par = params + [pop_n]
     pop = evolve(*par)
     p = pop[0]
@@ -357,5 +390,10 @@ def test6():
     par = params + gen
     simugraph(*par)
 
-test6()
+def test7():
+    prices = loadPrices()
+    train(prices,0.0001)
+
+test7()
+
 
