@@ -144,39 +144,43 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
     return gain
 
 
+
+
+
 def born():
     gen = [0,0,0,0]
     gen[0] = random.random()
-    gen[1] = random.randint(1,60*24)
+    gen[1] = random.randint(1,100)
     gen[2] = random.random()
     gen[3] = -random.random()
     return gen
 
 def mutate(gen):
     gen = gen[:]
-    for ale in range(len(gen)):
-        mod = random.randint(0,1)
-        if mod==0 :
-            continue
-        gen[ale] += gen[ale]/2 - random.randint(0,1)*gen[ale]
-        nvo = born()
-        if ale==0:
-            if gen[ale]<0 or gen[ale]>1:
-                gen[ale] = nvo[ale]
-        elif ale==1:
-            gen[ale] = int(gen[ale])
-            if gen[ale]<0:
-                gen[ale] = nvo[ale]
-        elif ale==2:
-            if gen[ale]<0 :
-                gen[ale] = nvo[ale]
-        elif ale==3:
-            if gen[ale]>0 :
-                gen[ale] = nvo[ale]
-    return gen
-
-
-
+    ale = random.randrange(4)
+    nvo = born()
+    if ale == 0:
+        #gen[ale] += 0.01 if random.randrange(2)==0 else -0.01
+        gen[ale] +=  gen[ale]/2 - random.randrange(2)*gen[ale]
+        #gen[ale] += random.random() if random.randrange(2)==0 else -random.random()
+        if gen[ale] < 0 or gen[ale] > 1:
+            gen[ale] = nvo[ale]
+    elif ale == 1:
+        gen[ale] += gen[ale] // 2 - random.randrange(2) * gen[ale]
+        if gen[ale] < 1:
+            gen[ale] = nvo[ale]
+    elif ale == 2:
+        #gen[ale] += 0.01 if random.randrange(2) == 0 else -0.01
+        gen[ale] += gen[ale] / 2 - random.randrange(2) * gen[ale]
+        #gen[ale] += random.random() if random.randrange(2) == 0 else -random.random()
+        if gen[ale] < 0:
+            gen[ale] = nvo[ale]
+    elif ale == 3:
+        #gen[ale] += 0.01 if random.randrange(2) == 0 else -0.01
+        gen[ale] += gen[ale] / 2 - random.randrange(2) * gen[ale]
+        #gen[ale] += random.random() if random.randrange(2) == 0 else -random.random()
+        if gen[ale] > 0:
+            gen[ale] = nvo[ale]
     return gen
 
 def reproduce(g1,g2):
@@ -189,6 +193,7 @@ params = []
 
 def fitness(gen):
     p = params + gen
+    #print('fitness:' ,gen)
     return sim(*p)
 
 def evolution(pri, fiat, fee, n):
@@ -199,27 +204,56 @@ def evolution(pri, fiat, fee, n):
         for j in range(n//10):
             ind = random.randrange(n)
             pop.append( mutate(pop[ind]) )
-            pop.append( born() )
-            pop.append( born() )
-            pop.append( born() )
-            pop.append( born() )
-            pop.append( born() )
-            
+            pop.append(born())
             a = random.randrange(n)
             b = random.randrange(n)
             pop.append( reproduce(pop[a],pop[b]) )
-        uniq = set()
-        for e in pop:
-            uniq.add( tuple(e) )
-        pop = [ list(e) for e in uniq]
         pop = sorted(pop, key=fitness, reverse=True)
-        if len(pop)>=n:
-            pop = pop[:n]
+        pop = pop[:n]
         print(i, fitness(pop[0]) )
     return pop
 
 
 
+
+def valid(v,ale):
+    b = born()
+    if ale==0 and (v<0 or v>1):
+        v = b[ale]
+    elif ale==1 and (v<1 or v>300):
+        v = b[ale]
+    elif ale==2 and v<0:
+        v = b[ale]
+    elif ale==3 and v>0:
+        v = b[ale]
+    return v
+
+def move(gen):
+    i = random.randrange(4)
+    difs = [0.001,0.002,0.004,0.008,0.016,0.032,0.064]
+    idifs = [1,2,4,8,16,32]
+    muls = [born(),gen]
+    d = difs if i!=1 else idifs
+    for v in d:
+        cgen = gen[:]
+        cgen[i] = valid(cgen[i]+v,i)
+        muls.append(cgen)
+        cgen = gen[:]
+        cgen[i] = valid(cgen[i]-v,i)
+        muls.append(cgen)
+    gen = max(muls,key=fitness)
+    return gen
+
+def evolve(pri, fiat, fee, n):
+    global params
+    params = [pri,fiat,fee]
+    pop = [ born() for i in range(n) ]
+    for i in range(500):
+        for j in range(n):
+            cgen = move(pop[j])
+            pop[j] = cgen
+        pop = sorted(pop,key=fitness,reverse=True)
+        print(i, pop[0], fitness(pop[0]) )
 
 
 def genprice():
@@ -293,7 +327,7 @@ def test2():
 def test4():
     prices = genprice()
     params = [prices, 100, 0.0001]
-    pop_n = 500
+    pop_n = 100
     par = params + [pop_n]
     pop = evolution( *par )
     p = pop[0]
@@ -301,8 +335,27 @@ def test4():
     par = params + p
     simugraph( *par )
 
+def test5():
+    prices = genprice()
+    params = [prices, 100, 0.0001]
+    pop_n = 100
+    par = params + [pop_n]
+    pop = evolve(*par)
+    p = pop[0]
+    print(p)
+    par = params + p
+    simugraph(*par)
 
+def test6():
+    prices = genprice()
+    params = [prices, 100, 0.0001]
+    gen = [0.426427716, 70, 0.020086, -0.016852181]
+    gen = [0.25345167092181764, 24, 0.01742015806095379, -0.015868612469587984]
+    gen = [0.10797469211486133, 42, 0.0050972323344256965, -0.0006449588306534429]
+    gen = [0.5309097710296248, 71, 0.025269520207939822, -0.012467802801351402]
+    gen = [0.06322814701689058, 30, 0.006598365101773482, -0.0010635786702839628]
+    par = params + gen
+    simugraph(*par)
 
-
-test4()
+test6()
 
