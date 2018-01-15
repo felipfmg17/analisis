@@ -61,7 +61,8 @@ def calcEMA(vals,a):
 		series.append(s)
 	return series
 
-def sim(pri, fiat, fee, a, mins, lbuy, lsell):
+def sim(pri, fiat, fee, a, mins, lbuy):
+    lsell = -lbuy
     ema = EMA(a)
     dev = Ratio( [pri[0]]*mins )
     ofiat, cryp, sells, buys, fees = fiat, 0, 0, 0, 0
@@ -89,7 +90,8 @@ def sim(pri, fiat, fee, a, mins, lbuy, lsell):
     gain = (fiat-ofiat)/ofiat
     return gain
 
-def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
+def simugraph(prices, usd, fee, alpha, minutes, limbuy):
+    limsell = -limbuy
     ema = EMA(alpha)
     ema_sig = []
     por = Ratio( [prices[0]]*minutes )
@@ -99,7 +101,7 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
     buys = 0
     fees = 0
 
-    for i in len(prices):
+    for i in range(len(prices)):
         p = prices[i]
         e = ema.next(p)
         ema_sig.append(e)
@@ -119,6 +121,7 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
                 fees += fiat*fee
                 fiat *= 1-fee
                 sells += 1
+                print('Selling, price', p, i)
 
     if crypto>0:
         fiat = crypto * prices[-1]
@@ -152,42 +155,38 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
 
 
 def born():
-    gen = [0,0,0,0]
+    gen = [0,0,0]
     gen[0] = random.random()
-    gen[1] = random.randint(1,100)
+    gen[1] = random.randint(1,200)
     gen[2] = random.random()
-    gen[3] = -random.random()
     return gen
 
 params = []
 
 def fitness(gen):
     p = params + gen
-    #print('fitness:' ,gen)
     return sim(*p)
 
 def valid(v,ale):
     b = born()
     if ale==0 and (v<0 or v>1):
         v = b[ale]
-    elif ale==1 and (v<1 or v>100):
+    elif ale==1 and (v<1 or v>200):
         v = b[ale]
     elif ale==2 and v<0:
-        v = b[ale]
-    elif ale==3 and v>0:
         v = b[ale]
     return v
 
 #difs = [0.0005,0.001,0.002,0.004,0.008,0.016,0.032,0.064]
 #difs = list(range(0.001,0.002,0.0001)) + list(range(0.01,0.02,0.001))
-difs = [ v/1000 for v in range(10)] + [ v/100 for v in range(10) ] +  [ v/10 for v in range(10)]
-idifs = [1,2,3,4,5,6,7,8,9,10,12,15,20,25,30,50,60,100]
+difs = [ v/1000 for v in range(10)] + [ v/100 for v in range(10) ]
+idifs = [1,2,3,4,5]
 difs += [-v for v in difs]
 idifs += [-v for v in idifs]
 def move(gen):
     bgen = gen[:]
     bper = fitness(bgen)
-    for i in range(4):
+    for i in range(len(gen)):
         d = difs if i != 1 else idifs
         for v in d:
             cgen = gen[:]
@@ -205,7 +204,7 @@ def evolve(pri, fiat, fee):
     gen = born()
     per = fitness(gen)
     bgen,bper = gen,per
-    for i in range(10000):
+    for i in range(100):
         cgen,cper = move(gen)
         if cper==per:
             if cper>bper:
@@ -215,11 +214,27 @@ def evolve(pri, fiat, fee):
             per = fitness(gen)
         elif cper>per:
             gen,per = cgen,cper
-        #print(i,gen,per,cgen==gen)
-        print(i, bgen, bper)
+        #print(i, bgen, bper)
+    print(bper)
     return bgen
 
-def train(prices):
+def train(ini,fin,sec):
+    fiat, fee = 100, 0.0001
+    cini = ini
+    wprices = loadPrices(ini,fin)
+    while cini<fin:
+        prices = loadPrices(cini,cini+sec)
+        cini += sec
+        params = [prices,fiat,fee]
+        gen = evolve(*params)
+        params[0] = wprices
+        par = params + gen
+        gain = sim(*par)
+        print(gen, gain)
+
+
+
+def htrain(prices):
     fiat, fee = 100, 0.0001
     params = [prices, fiat, fee]
     p = evolve(*params)
@@ -237,8 +252,8 @@ JOIN exchange as c
 ON a.exchange_id = c.id
 WHERE c.name = \"bitso\"
 AND b.name = \"xrp_mxn\" """
-    sql += ' AND a.date_time > ' + '\"' + d0 + '\"'
-    sql += ' AND a.date_time < ' + '\"' + d1 + '\"'
+    sql += ' AND a.date_time_sec > '  + str(d0)
+    sql += ' AND a.date_time_sec < '  + str(d1)
     cursor = db.cursor()
     cursor.execute(sql)
 
@@ -421,12 +436,17 @@ def test5():
 
 def test6():
     prices = genprice()
+    d0 = '2018-01-09 12:00:00'
+    d1 = '2018-01-10 12:00:00'
+    random.seed()
+    prices = loadPrices(d0, d1)
     params = [prices, 100, 0.0001]
     gen = [0.426427716, 70, 0.020086, -0.016852181]
     gen = [0.25345167092181764, 24, 0.01742015806095379, -0.015868612469587984]
     gen = [0.10797469211486133, 42, 0.0050972323344256965, -0.0006449588306534429]
     gen = [0.5309097710296248, 71, 0.025269520207939822, -0.012467802801351402]
     gen = [0.06322814701689058, 30, 0.006598365101773482, -0.0010635786702839628]
+    gen = [0.6976850624011044, 21, 0.013298465589017464]
     par = params + gen
     simugraph(*par)
 
@@ -437,6 +457,14 @@ def test8():
     prices = loadPrices(d0,d1)
     train(prices)
 
-test8()
+def test9():
+    1515307442
+    1515912169
+    ini = 1515307382
+    fin = 1515912230
+    sec = 24*60*60
+    train(ini,fin,sec)
+
+test9()
 
 
