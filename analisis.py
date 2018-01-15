@@ -197,14 +197,13 @@ def move(gen):
                 bper = cper
     return bgen,bper
 
-
 def evolve(pri, fiat, fee):
     global params
     params = [pri, fiat, fee]
     gen = born()
     per = fitness(gen)
     bgen,bper = gen,per
-    for i in range(100):
+    for i in range(500):
         cgen,cper = move(gen)
         if cper==per:
             if cper>bper:
@@ -231,8 +230,6 @@ def train(ini,fin,sec):
         par = params + gen
         gain = sim(*par)
         print(gen, gain)
-
-
 
 def htrain(prices):
     fiat, fee = 100, 0.0001
