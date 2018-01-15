@@ -152,7 +152,7 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
 def born():
     gen = [0,0,0,0]
     gen[0] = random.random()
-    gen[1] = random.randint(1,100)
+    gen[1] = random.randint(1,10)
     gen[2] = random.random()
     gen[3] = -random.random()
     return gen
@@ -168,7 +168,7 @@ def valid(v,ale):
     b = born()
     if ale==0 and (v<0 or v>1):
         v = b[ale]
-    elif ale==1 and (v<1 or v>300):
+    elif ale==1 and (v<1 or v>10):
         v = b[ale]
     elif ale==2 and v<0:
         v = b[ale]
@@ -178,8 +178,8 @@ def valid(v,ale):
 
 def move(gen):
     i = random.randrange(4)
-    difs = [0.001,0.002,0.004,0.008,0.016,0.032,0.064]
-    idifs = [1,2,4,8,16,32]
+    difs = [0.0005,0.001,0.002,0.004,0.008,0.016,0.032,0.064]
+    idifs = [1,2,4,8]
     muls = [born(),gen]
     d = difs if i!=1 else idifs
     for v in d:
@@ -192,30 +192,27 @@ def move(gen):
     gen = max(muls,key=fitness)
     return gen
 
-def evolve(pri, fiat, fee, n):
+def evolve(pri, fiat, fee):
+    n = 100  # population size
     global params
     params = [pri,fiat,fee]
     pop = [ born() for i in range(n) ]
-    for i in range(60):
+    for i in range(50):
         for j in range(n):
             pop[j] = move(pop[j])
         pop = sorted(pop,key=fitness,reverse=True)
         print(i, pop[0], fitness(pop[0]) )
-    return pop
+    return pop[0]
 
-def train(prices,fee):
-    params = [prices, 100, fee]
-    pop_n = 20
-    par = params + [pop_n]
-    pop = evolve(*par)
-    p = pop[0]
+def train(prices):
+    fiat, fee = 100, 0.0001
+    params = [prices, fiat, fee]
+    p = evolve(*params)
     print(p)
     par = params + p
     simugraph(*par)
 
-
-
-def loadPrices():
+def loadPrices(d0,d1):
     db = pymysql.connect('localhost','root','root','crypto_prices')
     sql = """ SELECT  a.price as Price
 FROM coin_price as a
@@ -224,15 +221,18 @@ ON a.currency_pair_id = b.id
 JOIN exchange as c
 ON a.exchange_id = c.id
 WHERE c.name = \"bitso\"
-AND b.name = \"xrp_mxn\"
-AND a.date_time > \"2018-01-09 12:00:00\"
-AND a.date_time < \"2018-01-11 12:00:00\"; """
+AND b.name = \"xrp_mxn\" """
+    sql += ' AND a.date_time > ' + '\"' + d0 + '\"'
+    sql += ' AND a.date_time < ' + '\"' + d1 + '\"'
     cursor = db.cursor()
     cursor.execute(sql)
 
     lines = cursor.fetchall()
     prices = [ e[0] for e in lines ]
     return prices;
+
+
+
 
 
 
@@ -274,7 +274,7 @@ def evolution(pri, fiat, fee, n):
     global params
     params = [pri,fiat,fee]
     pop = [ born() for i in range(n) ]
-    for i in range(500):
+    for i in range(50):
         for j in range(n//10):
             ind = random.randrange(n)
             pop.append( mutate(pop[ind]) )
@@ -286,8 +286,6 @@ def evolution(pri, fiat, fee, n):
         pop = pop[:n]
         print(i, fitness(pop[0]) )
     return pop
-
-
 
 def genprice():
     x = [100 * math.sin((4 * t / 1000 - 2) * math.pi) + 10 * math.sin((16 * t / 1000 - 8) * math.pi) for t in range(1000)]
@@ -390,10 +388,12 @@ def test6():
     par = params + gen
     simugraph(*par)
 
-def test7():
-    prices = loadPrices()
-    train(prices,0.0001)
+def test8():
+    d0 = '2018-01-08 12:00:00'
+    d1 = '2018-01-09 12:00:00'
+    prices = loadPrices(d0,d1)
+    train(prices)
 
-test7()
+test8()
 
 
