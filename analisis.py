@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import math
 import random
 import pymysql
+import time
 
 class EMA:
 	def __init__(self,a):
@@ -98,7 +99,8 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
     buys = 0
     fees = 0
 
-    for p in prices:
+    for i in len(prices):
+        p = prices[i]
         e = ema.next(p)
         ema_sig.append(e)
         d = por.next(e)
@@ -109,7 +111,7 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
                 crypto += fiat/p
                 fiat = 0
                 buys += 1
-                print('Buying, price',p)
+                print('Buying, price',p,i)
         elif d<limsell :
             if crypto>0 :
                 fiat = crypto*p
@@ -152,7 +154,7 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy, limsell):
 def born():
     gen = [0,0,0,0]
     gen[0] = random.random()
-    gen[1] = random.randint(1,10)
+    gen[1] = random.randint(1,100)
     gen[2] = random.random()
     gen[3] = -random.random()
     return gen
@@ -168,7 +170,7 @@ def valid(v,ale):
     b = born()
     if ale==0 and (v<0 or v>1):
         v = b[ale]
-    elif ale==1 and (v<1 or v>10):
+    elif ale==1 and (v<1 or v>100):
         v = b[ale]
     elif ale==2 and v<0:
         v = b[ale]
@@ -176,33 +178,46 @@ def valid(v,ale):
         v = b[ale]
     return v
 
+#difs = [0.0005,0.001,0.002,0.004,0.008,0.016,0.032,0.064]
+#difs = list(range(0.001,0.002,0.0001)) + list(range(0.01,0.02,0.001))
+difs = [ v/1000 for v in range(10)] + [ v/100 for v in range(10) ] +  [ v/10 for v in range(10)]
+idifs = [1,2,3,4,5,6,7,8,9,10,12,15,20,25,30,50,60,100]
+difs += [-v for v in difs]
+idifs += [-v for v in idifs]
 def move(gen):
-    i = random.randrange(4)
-    difs = [0.0005,0.001,0.002,0.004,0.008,0.016,0.032,0.064]
-    idifs = [1,2,4,8]
-    muls = [born(),gen]
-    d = difs if i!=1 else idifs
-    for v in d:
-        cgen = gen[:]
-        cgen[i] = valid(cgen[i]+v,i)
-        muls.append(cgen)
-        cgen = gen[:]
-        cgen[i] = valid(cgen[i]-v,i)
-        muls.append(cgen)
-    gen = max(muls,key=fitness)
-    return gen
+    bgen = gen[:]
+    bper = fitness(bgen)
+    for i in range(4):
+        d = difs if i != 1 else idifs
+        for v in d:
+            cgen = gen[:]
+            cgen[i] = valid(cgen[i]+v,i)
+            cper = fitness(cgen)
+            if  cper>bper:
+                bgen = cgen
+                bper = cper
+    return bgen,bper
+
 
 def evolve(pri, fiat, fee):
-    n = 100  # population size
     global params
-    params = [pri,fiat,fee]
-    pop = [ born() for i in range(n) ]
-    for i in range(50):
-        for j in range(n):
-            pop[j] = move(pop[j])
-        pop = sorted(pop,key=fitness,reverse=True)
-        print(i, pop[0], fitness(pop[0]) )
-    return pop[0]
+    params = [pri, fiat, fee]
+    gen = born()
+    per = fitness(gen)
+    bgen,bper = gen,per
+    for i in range(10000):
+        cgen,cper = move(gen)
+        if cper==per:
+            if cper>bper:
+                bgen = cgen
+                bper = cper
+            gen = born()
+            per = fitness(gen)
+        elif cper>per:
+            gen,per = cgen,cper
+        #print(i,gen,per,cgen==gen)
+        print(i, bgen, bper)
+    return bgen
 
 def train(prices):
     fiat, fee = 100, 0.0001
@@ -235,6 +250,33 @@ AND b.name = \"xrp_mxn\" """
 
 
 
+# def move(gen):
+#     i = random.randrange(4)
+#     difs = [0.0005,0.001,0.002,0.004,0.008,0.016,0.032,0.064]
+#     idifs = [1,2,4,8]
+#     muls = [born(),gen]
+#     d = difs if i!=1 else idifs
+#     for v in d:
+#         cgen = gen[:]
+#         cgen[i] = valid(cgen[i]+v,i)
+#         muls.append(cgen)
+#         cgen = gen[:]
+#         cgen[i] = valid(cgen[i]-v,i)
+#         muls.append(cgen)
+#     gen = max(muls,key=fitness)
+#     return gen
+#
+# def evolve(pri, fiat, fee):
+#     n = 100  # population size
+#     global params
+#     params = [pri,fiat,fee]
+#     pop = [ born() for i in range(n) ]
+#     for i in range(50):
+#         for j in range(n):
+#             pop[j] = move(pop[j])
+#         pop = sorted(pop,key=fitness,reverse=True)
+#         print(i, pop[0], fitness(pop[0]) )
+#     return pop[0]
 
 def mutate(gen):
     gen = gen[:]
@@ -389,8 +431,9 @@ def test6():
     simugraph(*par)
 
 def test8():
-    d0 = '2018-01-08 12:00:00'
-    d1 = '2018-01-09 12:00:00'
+    d0 = '2018-01-09 12:00:00'
+    d1 = '2018-01-10 12:00:00'
+    random.seed()
     prices = loadPrices(d0,d1)
     train(prices)
 
