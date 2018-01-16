@@ -156,9 +156,9 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy):
 
 def born():
     gen = [0,0,0]
-    gen[0] = random.random()
+    gen[0] = random.uniform(0.0,0.4)
     gen[1] = random.randint(1,200)
-    gen[2] = random.random()
+    gen[2] = random.uniform(0.0,0.5)
     return gen
 
 params = []
@@ -169,18 +169,18 @@ def fitness(gen):
 
 def valid(v,ale):
     b = born()
-    if ale==0 and (v<0 or v>1):
+    if ale==0 and (v<0 or v>0.35):
         v = b[ale]
     elif ale==1 and (v<1 or v>200):
         v = b[ale]
-    elif ale==2 and v<0:
+    elif ale==2 and v<0.5:
         v = b[ale]
     return v
 
 #difs = [0.0005,0.001,0.002,0.004,0.008,0.016,0.032,0.064]
 #difs = list(range(0.001,0.002,0.0001)) + list(range(0.01,0.02,0.001))
-difs = [ v/1000 for v in range(10)] + [ v/100 for v in range(10) ]
-idifs = [1,2,3,4,5]
+difs = [ v/1000 for v in range(10)] + [ v/100 for v in range(10) ] 
+idifs = [ v for v in range(30) ] 
 difs += [-v for v in difs]
 idifs += [-v for v in idifs]
 def move(gen):
@@ -203,7 +203,7 @@ def evolve(pri, fiat, fee):
     gen = born()
     per = fitness(gen)
     bgen,bper = gen,per
-    for i in range(500):
+    for i in range(1000):
         cgen,cper = move(gen)
         if cper==per:
             if cper>bper:
@@ -240,7 +240,7 @@ def htrain(prices):
     simugraph(*par)
 
 def loadPrices(d0,d1):
-    db = pymysql.connect('localhost','root','root','crypto_prices')
+    db = pymysql.connect('localhost','root','didu.2015','crypto_prices')
     sql = """ SELECT  a.price as Price
 FROM coin_price as a
 JOIN currency_pair as b
@@ -436,7 +436,9 @@ def test6():
     d0 = '2018-01-09 12:00:00'
     d1 = '2018-01-10 12:00:00'
     random.seed()
-    prices = loadPrices(d0, d1)
+    ini = 1514771096
+    fin = 1515912230
+    prices = loadPrices(ini,fin)
     params = [prices, 100, 0.0001]
     gen = [0.426427716, 70, 0.020086, -0.016852181]
     gen = [0.25345167092181764, 24, 0.01742015806095379, -0.015868612469587984]
@@ -444,6 +446,16 @@ def test6():
     gen = [0.5309097710296248, 71, 0.025269520207939822, -0.012467802801351402]
     gen = [0.06322814701689058, 30, 0.006598365101773482, -0.0010635786702839628]
     gen = [0.6976850624011044, 21, 0.013298465589017464]
+    # good params for day trading, tested in a 2 week range
+    gen = [0.0775214623335717, 108, 0.002508053420643197]
+    gen = [0.20823818563981147, 167, 0.012559149541101634]
+    gen = [0.11053557405104597, 100, 0.003075100947248841]
+    gen = [0.02261740424759078, 109, 0.00665682583458158]
+    gen = [0.013560024698097035, 89, 0.004012513576199672]
+    gen = [0.3836631910358586, 194, 0.008800493328907144]
+    gen = [0.10165607433861673, 99, 0.0032157637929226546]
+    gen = [0.01681152953114882, 106, 0.003291656356364636]
+    gen = [0.17343723553658355, 100, 0.008349280831410566]
     par = params + gen
     simugraph(*par)
 
@@ -455,9 +467,7 @@ def test8():
     train(prices)
 
 def test9():
-    1515307442
-    1515912169
-    ini = 1515307382
+    ini = 1514771096
     fin = 1515912230
     sec = 24*60*60
     train(ini,fin,sec)
@@ -465,3 +475,5 @@ def test9():
 test9()
 
 
+# ini 44.39
+# fin 40.45
