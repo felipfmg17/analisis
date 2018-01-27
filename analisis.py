@@ -156,9 +156,9 @@ def simugraph(prices, usd, fee, alpha, minutes, limbuy):
 
 def born():
     gen = [0,0,0]
-    gen[0] = random.uniform(0.0,0.4)
-    gen[1] = random.randint(1,200)
-    gen[2] = random.uniform(0.0,0.5)
+    gen[0] = random.uniform(0.0,1)
+    gen[1] = random.randint(1,10000)
+    gen[2] = random.uniform(0.0,1)
     return gen
 
 params = []
@@ -169,18 +169,18 @@ def fitness(gen):
 
 def valid(v,ale):
     b = born()
-    if ale==0 and (v<0 or v>0.35):
+    if ale==0 and (v<0 or v>1):
         v = b[ale]
-    elif ale==1 and (v<1 or v>200):
+    elif ale==1 and (v<1 or v>10000):
         v = b[ale]
-    elif ale==2 and v<0.5:
+    elif ale==2 and v<1:
         v = b[ale]
     return v
 
 #difs = [0.0005,0.001,0.002,0.004,0.008,0.016,0.032,0.064]
 #difs = list(range(0.001,0.002,0.0001)) + list(range(0.01,0.02,0.001))
 difs = [ v/1000 for v in range(10)] + [ v/100 for v in range(10) ] 
-idifs = [ v for v in range(30) ] 
+idifs = [ v for v in range(10)] + [v for v in range(10,100,10) ]
 difs += [-v for v in difs]
 idifs += [-v for v in idifs]
 def move(gen):
@@ -240,7 +240,7 @@ def htrain(prices):
     simugraph(*par)
 
 def loadPrices(d0,d1):
-    db = pymysql.connect('localhost','root','didu.2015','crypto_prices')
+    db = pymysql.connect('localhost','root','root','crypto_prices')
     sql = """ SELECT  a.price as Price
 FROM coin_price as a
 JOIN currency_pair as b
@@ -456,6 +456,7 @@ def test6():
     gen = [0.10165607433861673, 99, 0.0032157637929226546]
     gen = [0.01681152953114882, 106, 0.003291656356364636]
     gen = [0.17343723553658355, 100, 0.008349280831410566]
+    gen = [0.8419727025377259, 8, 0.2196043970583752]
     par = params + gen
     simugraph(*par)
 
@@ -469,10 +470,10 @@ def test8():
 def test9():
     ini = 1514771096
     fin = 1515912230
-    sec = 24*60*60
+    sec = 24*60*60*3
     train(ini,fin,sec)
 
-test9()
+test6()
 
 
 # ini 44.39
